@@ -6,11 +6,30 @@
 - `cloudflared` runs in Docker and forwards `https://ai.<your-domain>` to `open-webui:8080`.
 - Only Open WebUI is exposed through Cloudflare Tunnel. Ollama is never exposed publicly.
 
+### Infrastructure diagram
+```mermaid
+flowchart LR
+  user["User Browser"] --> access["Cloudflare Access (SSO / WARP Policy)"]
+  access --> edge["Cloudflare Edge"]
+  edge --> tunnel["Cloudflare Tunnel"]
+  tunnel --> cfd["cloudflared container"]
+  cfd --> webui["Open WebUI container (:8080)"]
+  webui --> ollama["Ollama on macOS host (127.0.0.1:11434)"]
+```
+
+Traffic flow summary:
+1. The browser reaches `https://ai.example.com`.
+2. Cloudflare Access enforces identity/device policy before any origin traffic.
+3. Cloudflare Tunnel forwards traffic to the local `cloudflared` container.
+4. `cloudflared` proxies to Open WebUI.
+5. Open WebUI calls Ollama on the host for model inference.
+
 ## 2) Prerequisites
 - macOS with [Homebrew](https://brew.sh/)
 - [Ollama](https://ollama.com/download)
 - Docker Desktop (or Docker Engine + Compose plugin)
 - Cloudflare account with a managed domain
+- You must own and manage the parent domain in Cloudflare DNS before using a hostname like `ai.example.com` (replace `example.com` with your real domain)
 - `cloudflared` CLI installed locally for tunnel bootstrap
 
 Install core tools on macOS:
@@ -46,6 +65,9 @@ make up
 ```bash
 make status
 ```
+
+## Open WebUI screenshot
+![Open WebUI Screenshot](./docs/open-webui-screenshot.png)
 
 ## 4) Cloudflare Tunnel creation commands
 Run these on your local machine (outside containers):
