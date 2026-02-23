@@ -1,0 +1,24 @@
+# Environment files (keep template tracked)
+.env
+.env.*
+!.env.example
+
+# Cloudflare tunnel secrets/generated runtime config
+cloudflared/*
+!cloudflared/config.yml
+
+# Runtime artifacts
+tmp/
+*.log
+*.out
+*.err
+*.pid
+*.tmp
+
+# Editor/OS clutter
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
