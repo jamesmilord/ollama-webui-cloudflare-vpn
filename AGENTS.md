@@ -27,6 +27,39 @@ This repository provides a production-ready local AI stack for:
 - Never commit tunnel credentials JSON.
 - Never disable Access protections for internet-facing hostname without explicit approval.
 
+## Repo-specific operating rules
+- Treat `cloudflared/config.yml` as the template/source file.
+- Treat `cloudflared/config.rendered.yml` as generated output.
+- Do not hand-edit `cloudflared/config.rendered.yml`; it is rendered from `.env` by `scripts/up.sh`.
+- Use the project entrypoints in `Makefile` when operating the stack:
+  - `make up`
+  - `make down`
+  - `make status`
+  - `make logs`
+
+## Validation expectations
+- After changing Docker, tunnel, startup, or environment behavior, validate with:
+  - `make status`
+  - `docker compose ps`
+- If the change affects tunnel routing or remote access, also verify:
+  - local Open WebUI at `http://127.0.0.1:8080`
+  - Ollama tags API at `http://127.0.0.1:11434/api/tags`
+- If a change cannot be validated locally, say so explicitly in the final handoff.
+
+## Secrets and config hygiene
+- Never commit or print secret values from `.env`.
+- Never commit or print tunnel credential contents from `cloudflared/*.json`.
+- Never commit generated runtime config that embeds deployment-specific values unless explicitly requested.
+- When adding or renaming environment variables:
+  - update `.env.example`
+  - update any consuming code or Compose config
+  - update `README.md` if setup or operations changed
+
+## Network exposure policy
+- Ollama must remain bound to local host usage only and must not be published through Docker or Cloudflare.
+- `cloudflared` may only proxy to `open-webui:8080`.
+- Preserve the current trust boundary where Cloudflare Access protects the internet-facing hostname before origin traffic reaches the local stack.
+
 ## Safe extension guidelines
 - Add new models:
   - Pull on host with `ollama pull <model>`.
@@ -41,3 +74,15 @@ This repository provides a production-ready local AI stack for:
   - Replace JSON file under `cloudflared/`.
   - Update `.env` (`TUNNEL_ID`, `TUNNEL_CREDENTIALS_FILE`).
   - Restart stack: `make down && make up`.
+
+## Platform assumptions
+- This repository is macOS-first.
+- Ollama is expected to run on the host, not in Docker.
+- The startup path may rely on:
+  - Homebrew-managed `ollama` service, or
+  - `ollama serve` started on the host
+- Linux-specific networking changes should be treated as exceptions and documented in `README.md` when introduced.
+
+## Change discipline
+- Prefer minimal changes that preserve the existing architecture: host Ollama, containerized Open WebUI, containerized cloudflared.
+- Do not add new internet-facing services or ingress rules without explicit approval.

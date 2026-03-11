@@ -114,7 +114,33 @@ Policy option B (WARP-required, VPN-like):
 
 You can combine both: require SSO identity and WARP device state.
 
-## 7) Troubleshooting
+## 7) Open WebUI user management
+Cloudflare Access and Open WebUI accounts are separate controls:
+- Cloudflare Access decides who can reach the site at all.
+- Open WebUI decides who can sign in and what they can do after they get through Access.
+
+Current behavior for this repo:
+- Open WebUI account data is stored in the persisted Docker volume mounted at `/app/backend/data`.
+- On a fresh Open WebUI instance, the first account created becomes the Administrator.
+- Subsequent sign-ups default to the `pending` role and require administrator approval before the user can use the app.
+
+To add a user with the current repo setup:
+1. Sign in to Open WebUI as an administrator.
+2. If sign-up is disabled, re-enable it in `Admin Panel -> Settings -> General`.
+3. Have the new user register at the local or remote Open WebUI URL.
+4. Approve the account in `Admin Panel -> Users` by changing the role from `pending` to `user` (or `admin` only if needed).
+
+To remove or disable access:
+- Immediate access block: remove the person from the Cloudflare Access policy so they cannot reach the site.
+- Open WebUI deactivation: in `Admin Panel -> Users`, change the account role back to `pending`.
+- Full automated lifecycle management is possible through SCIM, but this repo does not currently enable or configure SCIM.
+
+Operational notes:
+- This repo does not currently pre-seed Open WebUI admin accounts through environment variables.
+- Open WebUI supports headless first-admin creation on a fresh install with `WEBUI_ADMIN_EMAIL`, `WEBUI_ADMIN_PASSWORD`, and optional `WEBUI_ADMIN_NAME`, but that would need to be wired into `docker-compose.yml` before use here.
+- Deleting the `open-webui` Docker volume removes all Open WebUI state, including all users and chats. Treat that as a full reset, not a normal offboarding workflow.
+
+## 8) Troubleshooting
 - Ollama not starting:
   - Verify `ollama` exists: `which ollama`
   - Try manual run: `ollama serve`
@@ -133,13 +159,13 @@ You can combine both: require SSO identity and WARP device state.
   - Expected when Access policy is enabled
   - Authenticate or connect WARP based on policy
 
-## 8) Security notes
+## 9) Security notes
 - Never expose Ollama (`11434`) to the internet.
 - Keep tunnel credentials JSON private; it is gitignored by default.
 - Prefer Access policies with least privilege.
 - Rotate tunnel credentials if leaked.
 
-## Linux note
+## 10) Linux note
 On Linux, `host.docker.internal` may require setup. Alternative:
 - Use Docker host gateway mapping or
 - Set `OLLAMA_BASE_URL` to a reachable host IP (for example `http://172.17.0.1:11434`).
